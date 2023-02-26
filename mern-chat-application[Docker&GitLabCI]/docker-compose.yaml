@@ -1,0 +1,18 @@
+version: '3.0'
+
+services:
+  frontend:
+    container_name: ${FRONTEND_SERVICE_NAME}
+    image: ${FRONTEND_IMAGE_NAME}
+    ports:
+      - ${DC_FRONTEND_HOST_PORT}:${DC_FRONTEND_CONTAINER_PORT}
+  backend:
+    container_name: ${BACKEND_SERVICE_NAME}
+    image: ${BACKEND_IMAGE_NAME}
+    ports:
+      - ${DC_BACKEND_HOST_PORT}:${DC_BACKEND_CONTAINER_PORT}
+
+networks:
+  default:
+    external:
+      name: mern-stack

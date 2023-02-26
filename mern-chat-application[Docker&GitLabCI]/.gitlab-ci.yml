@@ -1,0 +1,113 @@
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "master"
+      when: never
+    - when: always
+
+stages:
+  - "test"
+  - "build"
+  - "deploy"
+
+run_unit_test:
+  stage: "test"
+  image: "alpine:latest"
+  tags:
+    - docker
+  before_script:
+    - echo "Running Testing Before Script for $CI_COMMIT_BRANCH..."
+  script: 
+    - echo "Running Unit Test Script for $CI_COMMIT_BRANCH...."
+
+.build:
+  stage: build 
+  tags:
+    - shell 
+  variables: 
+    - SERVICE_NAME =  "" 
+    - SERVICE_DIR =  "" 
+  before_script:
+    - echo "Start to building frontend image of docker....."
+    - export IMAGE_NAME=$CI_REGISTRY_IMAGE/$SERVICE_NAME
+    - export SERVICE_DIR=$SERVICE_DIR
+    - cd $SERVICE_DIR
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY 
+    - docker build -t $IMAGE_NAME:$CI_PIPELINE_IID .
+    - docker push $IMAGE_NAME:$CI_PIPELINE_IID
+  after_script:
+    - docker image ls $IMAGE_NAME
+
+build_frontend_image:
+  extends: .build 
+  variables: 
+    SERVICE_NAME: frontend
+    SERVICE_DIR: public
+
+build_backend_image:
+  extends: .build 
+  variables: 
+    SERVICE_NAME: backend
+    SERVICE_DIR: server
+
+.deploy:
+  stage: deploy
+  tags:
+    - shell
+  variables: 
+    FRONTEND_SERVICE_NAME = ""
+    DC_FRONTEND_HOST_PORT = ""
+    DC_FRONTEND_CONTAINER_PORT = ""
+    BACKEND_SERVICE_NAME = ""
+    DC_BACKEND_HOST_PORT = ""
+    DC_BACKEND_CONTAINER_PORT = ""
+  before_script:
+    - echo "Starting to deploying application."
+    - echo $TITLE
+    - sed -i -e "s/$TITLE/$TITLE/g" public/public/index.html
+    - export FRONTEND_IMAGE_NAME=$CI_REGISTRY_IMAGE/$FRONTEND_SERVICE_NAME:$CI_PIPELINE_IID
+    - export BACKEND_IMAGE_NAME=$CI_REGISTRY_IMAGE/$BACKEND_SERVICE_NAME:$CI_PIPELINE_IID
+    - export FRONTEND_SERVICE_NAME=$FRONTEND_SERVICE_NAME
+    - export BACKEND_SERVICE_NAME=$BACKEND_SERVICE_NAME
+    - export DC_FRONTEND_HOST_PORT=$DC_FRONTEND_HOST_PORT
+    - export DC_FRONTEND_CONTAINER_PORT=$DC_FRONTEND_CONTAINER_PORT 
+    - export DC_BACKEND_HOST_PORT=$DC_BACKEND_HOST_PORT
+    - export DC_BACKEND_CONTAINER_PORT=$DC_BACKEND_CONTAINER_PORT 
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker-compose down
+    - docker-compose up -d
+  after_script:
+    - kubectl version
+    
+  
+deploy_dev:
+  extends: .deploy
+  needs:
+    - build_frontend_image
+    - build_backend_image
+  variables:
+    FRONTEND_SERVICE_NAME: frontend
+    DC_FRONTEND_HOST_PORT: 80
+    DC_FRONTEND_CONTAINER_PORT: 80
+    BACKEND_SERVICE_NAME: backend
+    DC_BACKEND_HOST_PORT: 5000
+    DC_BACKEND_CONTAINER_PORT: 5000
+
+#build_frontend_image:
+#  stage: "build"
+#  tags:
+#    - shell
+#  variables: 
+#    IMAGE_NAME: $CI_REGISTRY_IMAGE/frontend
+#    SERVICE_DIR: public
+#  before_script:
+#    - echo "Start to building frontend image of docker....."
+#    - echo "$CI_REGISTRY_IMAGE"
+#    - cd $SERVICE_DIR
+#  script:
+#    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY 
+#    - docker build -t $IMAGE_NAME:$CI_PIPELINE_IID .
+#    - docker push $IMAGE_NAME:$CI_PIPELINE_IID
+#  after_script:
+#    - docker image ls frontend

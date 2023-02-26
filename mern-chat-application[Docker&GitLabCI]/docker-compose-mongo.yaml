@@ -1,0 +1,16 @@
+version: '3.0'
+
+services:
+  mongo:
+    container_name: mongo
+    restart: always
+    image: mongo:latest
+    ports:
+      - 27017:27017
+    volumes:
+      - $HOME/Data/Code/GitLab-CICD-Projects/chat-app-react-nodejs/MongoDatabase/data:/data/db
+
+networks:
+  default:
+    external:
+      name: mern-stack
