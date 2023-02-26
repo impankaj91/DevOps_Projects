@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service #Type
+
+metadata: 
+   name: website-service
+
+spec:
+  type: ClusterIP # Define the type of Servie.
+  selector:
+    component: web # Map the label that you have created in web.yaml.. 
+  ports:
+    - port: 80 
+      targetPort: 80

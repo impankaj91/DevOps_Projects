@@ -1,0 +1,53 @@
+#Define Version Of Docker Compose file.
+version: '3'
+
+#Define Services.
+services:
+#Pull Postgres Latest Image from DockerHub. 
+  postgres:
+    image: postgres:latest
+    environment:
+      - POSTGRES_PASSWORD=postgres_password
+#Pull Latest Redis Image from DockerHub.
+  redis:
+    image: redis:latest
+  nginx:
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./nginx
+    ports:
+      - '3050:80'
+#Build Server Image Using Dockerfile.dev
+  api:
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./server
+    volumes:
+      - /app/node_modules
+      - ./server:/app
+    environment:
+      - REDIS_HOST= redis
+      - REDIS_PORT= 6379
+      - PGUSER= postgres
+      - PGHOST= postgres
+      - PGDATABASE= postgres
+      - PGPASSWORD= postgres_password
+      - PGPORT= 5432
+  client:
+    stdin_open: true
+    build: 
+      dockerfile: Dockerfile.dev
+      context: ./client
+    volumes:
+      - /app/node_modules
+      - ./client:/app
+  worker:
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./worker
+    volumes:
+      - /app/node_modules
+      - ./worker:/app
+    environment:
+      - REDIS_HOST= redis
+      - REDIS_PORT= 6379

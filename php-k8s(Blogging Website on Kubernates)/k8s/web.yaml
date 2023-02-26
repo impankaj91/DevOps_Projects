@@ -1,0 +1,23 @@
+apiVersion: apps/v1 # Define Version of file.
+
+kind: Deployment #Type [Deployment,Service OR Pod]
+
+metadata:
+   name: php-blogweb 
+spec:
+  replicas: 3 # No of pods want to create.
+  selector:
+    matchLabels:
+      component: web # web label for frontend.
+  template:
+    metadata:
+      labels:
+        component: web
+    spec:
+      containers:
+        - name: php-blog # Name of pod generated.
+          image: pankaj349/php-blog # Define the name of image on dockerhub.
+          # [Note: Kubernates doesnot build image , You need to build image and publish to docker hub]
+          ports:
+            - containerPort: 80 # Talking about Port into the container.
+

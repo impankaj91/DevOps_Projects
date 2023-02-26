@@ -1,0 +1,11 @@
+E0gOerC*F;%79Rt/7O4u;4so7=dt=Q&7
+
+docker run -p 3306:3306 -e MYSQL_ROOT_PASSWORD=root -d mysql/mysql-server:latest
+select user,host from mysql.user;
+update mysql.user SET user = '%' where host = 'root';
+flush privileges;
+CREATE DATABASE ecommerce;
+
+use ecommerce;
+
+SHOW TABLES

@@ -1,0 +1,12 @@
+# Pull Node Image from DockerHub
+FROM node:alpine
+#Create Working Directory
+WORKDIR /app
+#Copy Package.json only to save cache busting..
+COPY ./package.json /app/
+#Install Node Modules
+RUN npm install
+#Now Only Copy all files.
+COPY . /app/
+#Execute Command in Container.
+CMD ["npm","run","start"]

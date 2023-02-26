@@ -1,0 +1,31 @@
+version: '3.1'
+services:
+  db:
+    image: mysql:5.7 # Mysql images pulling from dockerhub.
+    container_name: database-service
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+    ports:
+      - "3306:3306"
+    networks:
+      vpcbr:
+        ipv4_address: 10.5.0.5
+  ecommerce:
+    container_name: Ecommerce_Site
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+    ports:
+      - "8080:80"
+    networks:
+      vpcbr:
+        ipv4_address: 10.5.0.6
+networks:
+  vpcbr:
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 10.5.0.0/16

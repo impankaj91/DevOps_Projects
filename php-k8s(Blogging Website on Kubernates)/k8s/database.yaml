@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment 
+metadata:
+  name: mysql-database
+spec:
+  selector:
+    matchLabels:
+      component: database #database label for mysql database.
+  template:
+    metadata:
+      labels:
+        component: database #database label for mysql database.
+    spec:
+      volumes:
+        - name: database
+          persistentVolumeClaim:
+            claimName: database-persistent-volume-claim # define the name of claim same as in [database-persistent-volume-claim.yaml]
+      containers:
+        - name: mysql-database
+          image: mysql:5.7
+          volumeMounts:
+            - mountPath: /home/pankaj/Projects/PHP-Docker/database-storage #[Define the location of Database path].
+              name: database
+          ports:
+            - containerPort: 3306 #Port Inside the container.
+          env:
+            - name: MYSQL_ROOT_PASSWORD 
+              value: "root" 
+              #Set Default Password of root user as root.

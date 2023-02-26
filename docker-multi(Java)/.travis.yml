@@ -1,0 +1,31 @@
+sudo: required
+language: generic
+services:
+  - docker
+before_install:
+  - docker build -t pankaj/client-img -f ./client/Dockerfile.dev ./client
+script:
+  - docker run -e CI=True pankaj/client-img npm run test
+after_success:
+  - docker build -t pankaj349/multi-client ./client
+  - docker build -t pankaj349/multi-nginx ./nginx
+  - docker build -t pankaj349/multi-server ./server
+  - docker build -t pankaj349/multi-worker ./worker
+   #docker login
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  #Push Docker Images to Dockerhub
+  - docker push pankaj349/multi-client
+  - docker push pankaj349/multi-nginx 
+  - docker push pankaj349/multi-server
+  - docker push pankaj349/multi-worker
+deploy:
+  provider: elasticbeanstalk
+  region: ap-south-1
+  app: multi-docker
+  env: Multidocker-env
+  bucket-name: elasticbeanstalk-ap-south-1-008610611601
+  bucket-path: multi-docker
+  on:
+    branch: master
+  access_key_id: $AWS_ACCESS_KEY
+  secret_access_key: $AWS_SECRET_KEY
