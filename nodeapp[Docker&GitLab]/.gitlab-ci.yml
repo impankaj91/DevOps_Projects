@@ -1,0 +1,205 @@
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE != "merge request event"
+      when: never
+    - when: always
+
+variables:
+  IMAGE_NAME: $CI_REGISTRY_IMAGE
+#  IMAGE_TAG: $CI_PIPELINE_ID
+  DEV_HOST: ec2-54-85-219-158.compute-1.amazonaws.com
+  STAGING_HOST: ec2-54-85-219-158.compute-1.amazonaws.com
+  PROD_HOST: ec2-54-85-219-158.compute-1.amazonaws.com
+  DEV_ENDPOINT: $DEV_HOST:3000
+  STAGING_ENDPOINT: $STAGING_HOST:4000
+  PROD_ENDPOINT: $PROD_HOST:5000
+
+stages:
+  - test
+  - build
+  - deploy_dev 
+  - deploy_staging
+  - deploy_production
+
+run_unit_test:
+  stage: test
+  image: node:17-alpine3.14
+  cache:
+    key: "$CI_COMMIT_REF_NAME"
+    paths:
+      - app/node_modules
+  tags:
+    - docker
+  before_script:
+    - cd app
+    - npm install
+  script:
+    - npm test
+  artifacts:
+    when: always
+    paths:
+      - app/junit.xml
+    reports:
+      junit: app/junit.xml
+
+#sast:
+#  stage: test
+
+build_image:
+  stage: build
+  tags:
+    - shell
+  before_script:
+    - export PACKAGE_JSON_VERSION=$(cat app/package.json | jq -r .version)
+    - export VERSION=$PACKAGE_JSON_VERSION.$CI_PIPELINE_IID
+    - echo "VERSION=$VERSION" >> build.env
+  script:
+    - docker build -t $IMAGE_NAME:$VERSION .
+  artifacts:
+    reports:
+      dotenv: build.env
+
+push_image:
+  stage: build
+  needs:
+    - build_image
+  tags:
+    - shell
+  before_script:
+ #   - export VERSION=$(cat version-file.txt)
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker push $IMAGE_NAME:$VERSION
+
+
+
+.deploy:
+  tags:
+    - shell
+  variables: 
+    PRIVATE_KEY: ""
+    SERVER_HOST: ""
+    DEPLOYMENT_ENV: ""
+    APP_PORT: ""
+    SERVER_ENDPOINT: ""
+
+  script:
+#    - export VERSION=$(cat version-file.txt)
+    - echo $PRIVATE_KEY | sed -e "s/-----BEGIN RSA PRIVATE KEY-----/&\n/" -e "s/-----END RSA PRIVATE KEY-----/\n&/" -e "s/\S\{64\}/&\n/g"\ > deploy-key.pem
+    - chmod 400 deploy-key.pem
+    - scp -o StrictHostKeyChecking=no -i deploy-key.pem ./docker-compose.yaml ubuntu@$SERVER_HOST:/home/ubuntu 
+    - ssh -t -o StrictHostKeyChecking=no -i deploy-key.pem ubuntu@$SERVER_HOST "
+      docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
+      
+      export COMPOSE_PROJECT_NAME=$DEPLOYMENT_ENV &&
+      export DC_IMAGE_NAME=$IMAGE_NAME &&
+      export DC_IMAGE_TAG=$VERSION &&
+      export DC_APP_PORT=$APP_PORT &&
+
+      docker-compose down &&
+      docker-compose up -d"
+  environment:
+    name: $DEPLOYMENT_ENV
+    url: $SERVER_ENDPOINT
+
+deploy_to_dev:
+  stage: deploy_dev 
+  extends: .deploy
+  tags:
+    - shell
+  variables: 
+    PRIVATE_KEY: $SSH_PRIVATE_KEY
+    SERVER_HOST: $DEV_HOST
+    DEPLOYMENT_ENV: dev
+    APP_PORT: 3000
+    SERVER_ENDPOINT: $DEV_ENDPOINT
+
+
+#deploy_to_dev:
+#  stage: deploy_dev
+#  tags:
+#    - shell
+#  script:
+##    - export VERSION=$(cat version-file.txt)
+#    - chmod 400 $SSH_PRIVATE_KEY
+#    - scp -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ./docker-compose.yaml ubuntu@$DEV_HOST:/home/ubuntu 
+#    - ssh -t -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ubuntu@$DEV_HOST "
+#      docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
+#      
+#      export COMPOSE_PROJECT_NAME=dev &&
+#      export DC_IMAGE_NAME=$IMAGE_NAME &&
+#      export DC_IMAGE_TAG=$VERSION &&
+#      export DC_APP_PORT=3000 &&
+#
+#      docker-compose down &&
+#      docker-compose up -d"
+#  environment:
+#    name: development
+#    url: $DEV_ENDPOINT
+
+run_functional_testing:
+  stage: deploy_dev
+  needs:
+    - deploy_to_dev
+  script: 
+    - echo "Running functional testing..."
+
+deploy_to_staging:
+  stage: deploy_staging
+  extends: .deploy
+  tags:
+    - shell
+  variables: 
+    PRIVATE_KEY: $SSH_PRIVATE_KEY
+    SERVER_HOST: $STAGING_HOST
+    DEPLOYMENT_ENV: staging
+    APP_PORT: 4000
+    SERVER_ENDPOINT: $STAGING_ENDPOINT
+
+run_performance_testing:
+  stage: deploy_staging
+  needs:
+    - deploy_to_staging
+  script: 
+    - echo "Running Performance testing..."
+
+
+#deploy_to_staging:
+#  stage: deploy_staging
+#  tags:
+#    - shell
+#  script: 
+#    - chmod 400 $SSH_PRIVATE_KEY
+#    - scp -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ./docker-compose.yaml ubuntu@$STAGING_HOST:/home/ubuntu
+#    - ssh -o StrictHostKeyChecking=no -i $SSH_PRIVATE_KEY ubuntu@$STAGING_HOST " 
+#      docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
+#      
+#      export COMPOSE_PROJECT_NAME=staging &&
+#      export DC_IMAGE_NAME=$IMAGE_NAME &&
+#      export DC_IMAGE_TAG=$VERSION &&
+#      export DC_APP_PORT=4000 &&
+#
+#      docker-compose down &&
+#      docker-compose up -d "
+#  
+#  environment:
+#    name: staging 
+#    url: $STAGING_ENDPOINT
+
+
+
+deploy_to_production:
+  stage: deploy_production
+  extends: .deploy
+  tags:
+    - shell
+  variables: 
+    PRIVATE_KEY: $SSH_PRIVATE_KEY
+    SERVER_HOST: $PROD_HOST
+    DEPLOYMENT_ENV: PROD
+    APP_PORT: 5000
+    SERVER_ENDPOINT: $PROD_ENDPOINT
+  when: manual
+
+#include:
+#  - template: Jobs/SAST.gitlab-ci.yml
