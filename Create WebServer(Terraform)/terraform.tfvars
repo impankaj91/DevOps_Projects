@@ -1,0 +1,5 @@
+env_prefix = "development"
+cidr_block = "192.168.0.0/16"
+public_subnet_block = "192.168.1.0/24"
+avail_zone = "ap-south-1c"
+ec2_type = "t3.xlarge"
