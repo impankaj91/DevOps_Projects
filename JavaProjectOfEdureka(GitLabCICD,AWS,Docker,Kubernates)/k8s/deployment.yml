@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${pod_name}-deployment # this value can be replaced by the gitlab.
+spec:
+  replicas: ${replica_count}
+  selector:
+    matchLabels:
+      app: ${pod_name}
+  template:
+    metadata:
+      labels:
+        app: ${pod_name}
+    spec:
+      containers:
+      - name: ${pod_name}
+        image: $CI_REGISTRY_IMAGE:$CI_PIPELINE_IID
+        ports:
+        - containerPort: 8080
+      imagePullSecrets:
+        - name: gitlab-token-auth
