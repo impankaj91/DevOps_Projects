@@ -1,0 +1,88 @@
+### Workflow section is defined the when the CI/CD Pipeline triggered if you dont specify
+### any contion then it will trigger any commit and it's not good practice so we run pipeline only when
+### there is commit on "main" branch only. 
+
+workflow:
+    rules:
+      - if: $CI_COMMIT_BRANCH != "main"
+        when: never
+      - when: always
+
+### we have three stages process for whole pipeline.
+
+stages:
+  - test
+  - build
+  - deploy_dev
+  - deploy_prod
+
+run_testcase:
+  stage: test
+  image: maven:3.8.4
+  tags:
+    - project
+  before_script:
+    - echo "maven testes are runnuing in process"
+  script:
+    - mvn clean test
+  artifacts:
+    when: always
+    paths:
+      - target/surefire-reports/TEST-com.abc.dataAccessObject.ProductImpTest.xml
+    reports:
+      junit: target/surefire-reports/TEST-com.abc.dataAccessObject.ProductImpTest.xml
+#  only:
+#    - master
+
+build_image:
+  stage: build
+  tags:
+    - shell
+  before_script:
+    - echo "Building the docker image..."
+  script:
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_PIPELINE_IID .
+#  only:
+#    - master
+
+push_image:
+  stage: build
+  tags: 
+    - shell
+  needs:
+    - build_image 
+  before_script:
+    - echo "Pushing Docker image to gitlab..."
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker push $CI_REGISTRY_IMAGE:$CI_PIPELINE_IID
+#  only:
+#    - master
+
+.deploy:
+  tags:
+    - shell
+  script:
+    - cd k8s/
+    - envsubst < deployment.yml> deployment-updated.yml
+    - envsubst < service.yml> service-updated.yml
+    - envsubst < ingress.yml> ingress-updated.yml
+    - kubectl apply -f deployment-updated.yml --kubeconfig $admin
+    - kubectl apply -f service-updated.yml --kubeconfig $admin
+    - kubectl apply -f ingress-updated.yml --kubeconfig $admin
+  #  - kubectl get nodes -o wide --kubeconfig $admin
+
+deploy_to_dev:
+  stage: deploy_dev
+  extends: .deploy 
+  environment:
+    name: development
+
+deploy_to_production:
+  stage: deploy_prod
+  extends: .deploy
+  environment:
+    name: production
+  when: manual
+
+
