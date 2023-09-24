@@ -1,0 +1,22 @@
+service: aws-python-contactus-project
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: python3.9
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action: "ses:*"
+          Resource: "*"
+
+functions:
+  create:
+    handler: handler.contactUs
+    events:
+      - http:
+          path: /sendContactUs
+          method: post
+          cors: true
+      

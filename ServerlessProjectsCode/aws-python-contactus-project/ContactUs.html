@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- Add Bootstrap CSS -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+  <!-- Add custom CSS for anime style -->
+  <style>
+    body {
+      background-image: url('https://e0.pxfuel.com/wallpapers/419/925/desktop-wallpaper-kakashi-naruto-hatake.jpg');
+      background-size: cover;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+    }
+    .container {
+      background-color: rgba(255,255,255,0.8);
+      border-radius: 15px;
+      padding: 20px;
+      margin-top: 50px;
+    }
+    .btn-primary {
+      background-color: #FF69B4; /* Hot pink */
+      border-color: #FF69B4; /* Hot pink */
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2 class="text-center my-4 text-primary">Form By Pankaj Shah</h2>
+
+  <form id="emailForm">
+    <div class="form-group">
+      <label for="To">To:</label>
+      <input type="text" id="To" name="To" class="form-control">
+    </div>
+    <div class="form-group">
+      <label for="From">From:</label>
+      <input type="text" id="From" name="From" class="form-control">
+    </div>
+    <div class="form-group">
+      <label for="Subject">Subject:</label>
+      <input type="text" id="Subject" name="Subject" class="form-control">
+    </div>
+    <div class="form-group">
+      <label for="Message">Message:</label>
+      <textarea id="Message" name="Message" class="form-control"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+  </form>
+</div>
+
+<script>
+document.getElementById('emailForm').addEventListener('submit', function(event) {
+  event.preventDefault();
+
+  var To = document.getElementById('To').value;
+  var From = document.getElementById('From').value;
+  var Subject = document.getElementById('Subject').value;
+  var Message = document.getElementById('Message').value;
+
+  var data = {
+    To: To,
+    From: From,
+    Subject: Subject,
+    Message: Message
+  };
+
+  fetch('https://week8mccgg.execute-api.us-east-1.amazonaws.com/dev/sendContactUs', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log('Success:', data);
+  })
+  .catch((error) => {
+    console.error('Error:', error);
+  });
+});
+</script>
+
+<!-- Add Bootstrap JS -->
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+</body>
+</html>
