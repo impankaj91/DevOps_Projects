@@ -1,0 +1,91 @@
+service: aws-python-todoapi
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: python3.9
+  environment:
+    DYNAMODB_TABLE: ${self:custom.Table}
+    Region: 'us-east-1'
+
+  iam:
+    role:
+      statements:
+        - Effect: "Allow"
+          Action: 
+            - dynamodb:PutItem
+            - dynamodb:GetItem
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:UpdateItem
+            - dynamodb:ListTables
+            - dynamodb:DeleteItem
+          Resource: "arn:aws:dynamodb:${opt:region,self:provider.environment.Region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
+  
+
+functions:
+  createTodo:
+    handler: handlers/createTodo.createTodo
+    events:
+      - http:
+          path: /create
+          method: post
+          cors: true
+  
+  deleteTodo:
+    handler: handlers/deleteTodo.deleteTodo
+    events:
+      - http:
+          path: /delete/{id}
+          method: delete
+          cors: true
+
+  getTodo:
+    handler: handlers/getTodo.getTodo
+    events:
+      - http:
+          path: /get/{id}
+          method: get
+          cors: true
+
+  getTodos:
+    handler: handlers/getTodos.getTodos
+    events:
+      - http:
+          path: /Todos
+          method: get
+          cors: true
+
+  updateTodo:
+    handler: handlers/updateTodo.updateTodo
+    events:
+      - http:
+          path: /update/{id}
+          method: put
+          cors: true 
+
+      
+
+custom:
+  pythonRequirements:
+    dockerizePip: true
+  Table: "TodoTable"
+
+resources: # CloudFormation template syntax
+  Resources:
+    TodoDatabase:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.Table}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+plugins:
+  - serverless-python-requirements
