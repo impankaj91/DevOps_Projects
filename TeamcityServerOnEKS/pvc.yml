@@ -1,0 +1,12 @@
+apiVersion: v1 
+kind: PersistentVolumeClaim 
+metadata:
+  name: teamcity-pvc
+  namespace: ci
+spec:
+  storageClassName: teamcity-ebs-sc
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 4Gi

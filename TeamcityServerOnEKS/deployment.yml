@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: teamcity-deployment
+  namespace: ci
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: teamcity
+  template:
+    metadata:
+      labels:
+        app: teamcity
+    spec:
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: teamcity
+          image: jetbrains/teamcity-server:2023.05.4
+          ports:
+            - containerPort: 8111
+          volumeMounts:
+            - name: teamcity-pvc
+              mountPath: "/data/teamcity_server/datadir"
+            - name: teamcity-pvc
+              mountPath: "/opt/teamcity/logs"
+      volumes:
+        - name: teamcity-pvc
+          persistentVolumeClaim:
+            claimName: teamcity-pvc
