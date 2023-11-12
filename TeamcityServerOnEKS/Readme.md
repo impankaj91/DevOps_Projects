@@ -33,4 +33,4 @@
 1. Remove the All Application Resource: kubectl delete -f TeamcityServer/
 2. Remove EBS CSI Driver: kubectl delete -k "github.com/kubernetes-sigs/aws-ebs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.25"
 3. Remove NodeGroup: eksctl delete nodegroup --name=teamcity-nodes --cluster=teamcity
-4. Remove Cluster: 
+4. Remove Cluster: eksctl delete cluster --name=teamcity
