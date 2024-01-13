@@ -1,0 +1,11 @@
+apiVersion: v1 
+kind: Service 
+metadata:
+  name: octopus
+spec:
+  type: ClusterIP
+  selector:
+    app: octopus
+  ports:
+  - port: 1322
+    targetPort: 8080

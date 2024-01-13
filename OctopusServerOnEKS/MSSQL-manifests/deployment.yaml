@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mssql-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mssql
+  template:
+    metadata:
+      labels:
+        app: mssql
+    spec:
+      containers:
+        - name: mssql
+          image:  mcr.microsoft.com/mssql/server:2022-latest
+          securityContext:
+            runAsUser: 0 
+            runAsGroup: 0
+          ports:
+          - containerPort: 1433
+          volumeMounts:
+            - name: mssql-storage
+              mountPath: /var/opt/mssql/data
+          env:
+            - name: ACCEPT_EULA
+              value: "Y"
+            - name: MSSQL_SA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: password
+                  name: mssql-password
+      volumes:
+        - name: mssql-storage
+          persistentVolumeClaim:
+            claimName: mssql-pvc

@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: octopus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: octopus
+  template:
+    metadata:
+      labels:
+        app: octopus
+    spec:
+      #initContainers:
+      #  - name: sqlcheck-container
+      #    image: appropriate/curl
+      #    command: ['sh', '-c', 'until nc -z mssql 1433; do echo waiting for mssql; sleep 2; done;']
+      containers:
+        - name: octopus
+          image: octopusdeploy/octopusdeploy:2023.4
+          ports:
+          - containerPort: 8080
+          volumeMounts:
+            - name: octopus-storage
+              mountPath: /repository
+            - name: octopus-storage
+              mountPath: /artifacts
+            - name: octopus-storage
+              mountPath: /taskLogs
+            - name: octopus-storage
+              mountPath: /cache
+            - name: octopus-storage
+              mountPath: /import
+          env:
+            - name: ACCEPT_EULA
+              value: "Y"
+            - name: DB_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  key: connectionString
+                  name: octopus-mssql
+            - name: ADMIN_USERNAME
+              value: "pankaj"
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: password
+                  name: octopus-password
+      volumes:
+        - name: octopus-storage
+          persistentVolumeClaim:
+            claimName: octopus-pvc

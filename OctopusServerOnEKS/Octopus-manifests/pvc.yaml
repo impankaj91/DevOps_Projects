@@ -1,0 +1,12 @@
+apiVersion: v1 
+kind: PersistentVolumeClaim 
+metadata:
+  name: octopus-pvc
+spec:
+  storageClassName: octopus-sc
+  resources:
+    requests:
+      storage: 8Gi
+  accessModes:
+    - ReadWriteOnce
+  
