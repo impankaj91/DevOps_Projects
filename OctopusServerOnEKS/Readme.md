@@ -26,8 +26,8 @@ eksctl utils associate-iam-oidc-provider --cluster=octopus --region=us-east-1 --
 eksctl create nodegroup --cluster=octopus --region=us-east-1 --name=octopus-ng --node-type=t3.medium --nodes=2 --node-min=2 --nodes-max=3 --node-volume-size=8 --ssh-public-key=teamcity-key --node-private-networking --managed --asg-access --external-dns-access --full-ecr-access --alb-ingress-access
 
 ### 6. Install the EBS Driver:
-Create the IAM Policy Amazon_EBS_CSI_Driver using iam_policy_ebs.json.
-kubectl apply -k "github.com/kubernetes-sigs/aws-ebs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.25"
+- Create the IAM Policy Amazon_EBS_CSI_Driver using iam_policy_ebs.json.
+- kubectl apply -k "github.com/kubernetes-sigs/aws-ebs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.25"
 
 ### 7. Install the AWS ELB Controller.
 - aws iam create-policy --policy-name AWSLoadBalancerControllerIAMPolicy --policy-document file://iam_policy.json
