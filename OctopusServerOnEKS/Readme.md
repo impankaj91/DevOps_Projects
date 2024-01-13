@@ -1,4 +1,4 @@
-################## Deploy the Octopus Server on the EKS ###########################
+################## Deploy the Octopus Server on the EKS ############################
 
 1. MSSQL Server.
     - Deployment File[Done].
